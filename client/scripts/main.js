@@ -19,10 +19,10 @@ app.config(['$routeProvider', '$locationProvider', '$httpProvider', function($ro
 }]);
 
 app.controller('frontController', ['$scope', '$resource', '$http', '$routeParams', '$route', '$q', '$location', function($scope, $resource, $http, $routeParams, $route, $q, $location) {
-  $scope.check = "Lo there, do I see my father,
-                  Lo there, do I see my mother, my sisters and brothers,
-                  Lo there, do I see the line of my people, back to the beginning,
-                  Lo, they do call to me, they bid me take my place among them,
-                  In the halls of Valhalla where the brave may code forever.";
+  $scope.line1 = "Lo there, do I see my father,";
+  $scope.line2 = "Lo there, do I see my mother, my sisters and brothers,";
+  $scope.line3 = "Lo there, do I see the line of my people, back to the beginning,";
+  $scope.line4 = "Lo, they do call to me, they bid me take my place among them,";
+  $scope.line5 = "In the halls of Valhalla where the brave may code forever.";
 
 }]);

@@ -190,7 +190,7 @@ gulp.task('watch', ['supervision'], function() {
 
   sync(config, function(err, bs) {
     if(!err) {
-      console.log("There stands an ash called Yggdrasil, A mighty tree showered in white hail. From there come the dews that fall in the valleys. It stands evergreen above Urd’s Well.");
+      console.log("There stands an ash called Yggdrasil,\nA mighty tree showered in white hail.\nFrom there come the dews that fall in the valleys.\nIt stands evergreen above Urd’s Well.");
     }
   });
 

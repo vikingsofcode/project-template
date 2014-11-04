@@ -30,6 +30,6 @@ var manifest = {
 
 Hapi.Pack.compose(manifest, composeOptions, function(err, pack) {
   pack.start(function() {
-    console.log('The gates to Asgard have been opened');
+    console.log('The gates to Asgard have been opened.');
   });
 });
