@@ -136,7 +136,7 @@ gulp.task('styles', ['clean-styles'], function() {
     styles = styles.pipe(CSSmin());
   }
 
-  return styles.pipe(gulp.dest(paths.styles.destination));
+  return styles.pipe(gulp.dest(paths.styles.destination)).pipe(sync.reload({stream: true}));
 });
 
 gulp.task('media', ['clean-media'], function() {
@@ -173,7 +173,7 @@ gulp.task('supervision', ['build'], function() {
 
 gulp.task('watch', ['supervision'], function() {
 
-  gulp.watch(paths.styles.watch, ['styles', sync.reload]);
+  gulp.watch(paths.styles.watch, ['styles']);
   gulp.watch(paths.templates.watch, ['templates', sync.reload]);
   gulp.watch(paths.partials.watch, ['partials', sync.reload]);
   gulp.watch(paths.media.watch, ['media', sync.reload]);
@@ -181,16 +181,15 @@ gulp.task('watch', ['supervision'], function() {
   gulp.watch(paths.server.watch, ['server']);
 
   var config = {
-    files: [paths.scripts.source, paths.styles.source, paths.templates.source, paths.partials.source, paths.media.source,  paths.scripts.destination, paths.styles.destination, paths.templates.destination, paths.partials.destination, paths.media.destination, paths.index.source, paths.index.destination, './build/client/bundle.js'],
+    files: [paths.scripts.destination, paths.styles.destination, paths.templates.destination, paths.partials.destination, paths.media.destination, paths.index.destination, './build/client/bundle.js'],
     port: 7678,
     proxy: 'localhost:6678',
-    open: false,
-    reloadDelay: 2000
+    open: false
   };
 
   sync(config, function(err, bs) {
     if(!err) {
-      console.log("There stands an ash called Yggdrasil,\nA mighty tree showered in white hail.\nFrom there come the dews that fall in the valleys.\nIt stands evergreen above Urd’s Well.");
+      console.log("Happy deving!")
     }
   });
 
