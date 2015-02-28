@@ -1,35 +1,51 @@
-var Hapi      = require('hapi'),
-    path      = require('path');
+var Hapi = require('hapi'),
+    Glue = require('glue'),
+    path = require('path');
 
 var composeOptions = {
-    relativeTo: __dirname
+  relativeTo: __dirname
 };
 
 var manifest = {
-  servers: [
+  server: {
+    debug: {
+      request: ['error']
+    },
+    connections: {
+      routes: {
+        security: true
+      }
+    }
+  },
+  connections: [
     {
       host: 'localhost',
       port: 6678,
-      options: {
-        labels: ['web'],
-        security: true,
-        debug: {
-          request: ['error']
-        }
-      }
-    },
+      labels: ['web']
+    }
   ],
   plugins: {
+    'lout': {},
     'visionary': {
       engines: { jade: 'jade' },
       path: path.join(__dirname, '../client/')
+    },
+    'hapi-mongo-models': {
+      mongodb: {
+        url: 'mongodb://localhost:27017/project-template'
+      },
+      autoIndex: true
     },
     './plugins/web/index': {}
   }
 };
 
-Hapi.Pack.compose(manifest, composeOptions, function(err, pack) {
-  pack.start(function() {
-    console.log('The gates to Asgard have been opened.');
+Glue.compose(manifest, composeOptions, function (err, server) {
+  if(err) {
+    throw err;
+  }
+
+  server.start(function () {
+    console.log('Server started');
   });
 });

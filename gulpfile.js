@@ -5,16 +5,15 @@ var path        = require('path'),
     sync        = require('browser-sync'),
     jade        = require('gulp-jade'),
     minify      = require('gulp-minify-css'),
-    rename      = require('gulp-rename'),
     plumber     = require('gulp-plumber'),
     prefix      = require('gulp-autoprefixer'),
     stylus      = require('gulp-stylus'),
     source      = require('vinyl-source-stream'),
     watchify    = require('watchify'),
     uglify      = require('gulp-uglify'),
-    supervisor  = require('gulp-supervisor'),
     streamify   = require('gulp-streamify'),
-    del         = require('del');
+    del         = require('del'),
+    nodemon     = require('gulp-nodemon');
 
 var production = process.env.NODE_ENV === 'production';
 
@@ -43,11 +42,6 @@ var paths = {
     source:       'client/media/**/*.*',
     watch:        'client/media/**/*.*',
     destination:  'build/client/media/'
-  },
-  index: {
-    source:       'index.js',
-    watch:        'index.js',
-    destination:  'build'
   },
   server: {
     source:       'server/**/*.js', 
@@ -87,10 +81,6 @@ gulp.task('clean-media', function(cb) {
   del([paths.media.destination + '**/*.*'], cb);
 });
 
-gulp.task('clean-index', function(cb) {
-  del([paths.index.destination + '/index.js'], cb);
-});
-
 gulp.task('clean-server', function(cb) {
   del([paths.server.destination  + '*.js'], cb);
 });
@@ -101,10 +91,9 @@ gulp.task('scripts', ['clean-scripts'], function() {
     extensions: ['.js']
   });
 
-  var build = bundle.bundle({
-    debug: !production
-  }).on('error', handleError)
-    .pipe(source(paths.scripts.filename));
+  var build = bundle.bundle()
+                    .on('error', handleError)
+                    .pipe(source(paths.scripts.filename));
 
   if (production) {
     build.pipe(streamify(uglify()));
@@ -116,12 +105,14 @@ gulp.task('scripts', ['clean-scripts'], function() {
 
 gulp.task('templates', ['clean-templates'], function() {
   return gulp.src(paths.templates.source)
+             // .pipe(jade({pretty: true}))
              .on('error', handleError)
              .pipe(gulp.dest(paths.templates.destination));
 });
 
 gulp.task('partials', ['clean-partials'], function() {
   return gulp.src(paths.partials.source)
+             // .pipe(jade({pretty: true}))
              .on('error', handleError)
              .pipe(gulp.dest(paths.partials.destination));
 });
@@ -141,17 +132,8 @@ gulp.task('styles', ['clean-styles'], function() {
 
 gulp.task('media', ['clean-media'], function() {
   return gulp.src(paths.media.source)
-             .pipe(gulp.dest(paths.media.destination));
-});
-
-gulp.task('index', ['clean-index'], function() {
-  return gulp.src(paths.index.source)
-             .pipe(gulp.dest(paths.index.destination));
-});
-
-gulp.task('server', ['clean-server'], function() {
-    return gulp.src(paths.server.source)
-               .pipe(gulp.dest(paths.server.destination));
+             .pipe(gulp.dest(paths.media.destination))
+             .pipe(sync.reload({stream: true}));
 });
 
 gulp.task('fontawesome', ['clean-styles'], function() {
@@ -164,43 +146,58 @@ gulp.task('fontawesome-fonts', ['fontawesome'], function() {
              .pipe(gulp.dest(paths.bower.fontsdest));
 });
 
-gulp.task('supervision', ['build'], function() {
-    supervisor('build/index.js', {
-      extensions: ['js,html'],
-      ignore: ['client/scripts', 'build/client/js/', 'server/']
-    });
-})
+gulp.task('server', ['clean-server'], function() {
+    return gulp.src(paths.server.source)
+               .pipe(gulp.dest(paths.server.destination));
+});
 
-gulp.task('watch', ['supervision'], function() {
+gulp.task('startup', function() {
+    nodemon({
+      script: 'build/server/index.js',
+      ext: 'js jade',
+      watch: ['build/server/index.js', 'build/client/**/*.jade'],
+      ignore: ['client/**/*.js/', 'build/client/**/*.js']
+    })
+    .on('restart', function() {
+      setTimeout(function() {
+        sync.reload({ stream: false });
+      }, 1750);
+    });
+});
+
+gulp.task('watch', function() {
 
   gulp.watch(paths.styles.watch, ['styles']);
-  gulp.watch(paths.templates.watch, ['templates', sync.reload]);
-  gulp.watch(paths.partials.watch, ['partials', sync.reload]);
-  gulp.watch(paths.media.watch, ['media', sync.reload]);
-  gulp.watch(paths.index.watch, ['index', sync.reload]);
+  gulp.watch(paths.scripts.source, ['scripts']).on('change', sync.reload);
+  gulp.watch(paths.templates.watch, ['templates']);
+  gulp.watch(paths.partials.watch, ['partials']);
+  gulp.watch(paths.media.watch, ['media']);
   gulp.watch(paths.server.watch, ['server']);
 
   var config = {
-    files: [paths.scripts.destination, paths.styles.destination, paths.templates.destination, paths.partials.destination, paths.media.destination, paths.index.destination, './build/client/bundle.js'],
     port: 7678,
     proxy: 'localhost:6678',
     open: false
   };
 
-  sync(config, function(err, bs) {
-    if(!err) {
-      console.log("Happy deving!")
-    }
-  });
-
-  var bundle = watchify({
+  var bundle = watchify(browserify({
     entries:    [paths.scripts.source],
-    extensions: ['.js']
+    extensions: ['.js'],
+    debug: true,
+    cache: {},
+    packageCache: {},
+    fullPaths: true
+  }));
+
+  sync(config, function(err, bs) {
+    if(err) {
+      console.log(err);
+    }
   });
 
   return bundle.on('update', function() {
     var build;
-    build = bundle.bundle({ debug: !production })
+    build = bundle.bundle()
                   .on('error', handleError)
                   .pipe(source(paths.scripts.filename));
     return build.pipe(gulp.dest(paths.scripts.destination))
@@ -210,8 +207,8 @@ gulp.task('watch', ['supervision'], function() {
 
 });
 
-gulp.task('build', ['templates', 'partials', 'styles', 'media', 'scripts', 'index', 'server', 'fontawesome', 'fontawesome-fonts']);
+gulp.task('build', ['templates', 'partials', 'styles', 'media', 'scripts', 'fontawesome', 'fontawesome-fonts', 'server']);
 
-gulp.task('start', ['build', 'supervision', 'watch']);
+gulp.task('start', ['watch', 'startup']);
 
 gulp.task('default', ['build']);
